@@ -1,0 +1,39 @@
+import codecademylib3
+import pandas as pd
+
+ad_clicks = pd.read_csv('ad_clicks.csv')
+print(ad_clicks.head(10))
+
+#This section sees how many views came from each utm source
+ad_clicks.groupby('utm_source')\
+.user_id.count()\
+.reset_index()
+
+#This section checks if someone clicked on an ad through a video
+is_click = ad_clicks['ad_click_timestamp'] = ~ad_clicks\
+   .ad_click_timestamp.isnull()
+
+#This section is calculating the percent of people who clicked on ads from each utm source
+clicks_by_source = ad_clicks.groupby(['utm_source', 'is_click']).user_id.count().reset_index()
+
+#Pivoting
+clicks_pivot = ad_clicks.pivot(
+  columns = 'is_click',
+  index = 'utm_source',
+  values = 'user_id'
+).reset_index()
+
+#Checks the percent of people who clicked the ad
+#clicks_pivot[True] is the number of people who clicked 
+#clicks_pivot[False] is the number of people who did not click
+# so it becomes people who clicked/total people (or views)
+clicks_pivot['percent_clicked'] = \
+   clicks_pivot[True] / \
+   (clicks_pivot[True] + 
+    clicks_pivot[False])
+
+#Were approximately the same number of people shown both ads?
+#We need to count the number of people group by experimental group
+
+ad_clicks.groupby('user_id').experimental_group.count().reset_index()
+#You gotta find the problems at home where you can run Pandas locally
