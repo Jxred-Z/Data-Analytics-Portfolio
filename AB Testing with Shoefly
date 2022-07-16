@@ -1,99 +1,152 @@
-import matplotlib as mp
-import pandas as pd
+# These codes are associated with the project A/B testing with Shoefly.com under the CodeAcademy project module for learning the Python Library Pandas. 
+To me, I am much more familiar with SQL and used several queries to draw the proper conclusions of the A/B testing. it may have been listed in the 
+actual project walkthrough, however, this is easier for me to aggregate using this language. #
 
-ad_clicks = pd.read_csv('ad_clicks.csv')
-print(ad_clicks.head(10))
 
-#This section sees how many views came from each utm source
-ad_clicks.groupby('utm_source')\
-.user_id.count()\
-.reset_index()
+# This query counts our sample for the A/B testing
 
-#This section checks if someone clicked on an ad through a video
-ad_clicks['is_click'] = ad_clicks['ad_click_timestamp'] = ~ad_clicks\
-   .ad_click_timestamp.isnull()
+SELECT COUNT (experimental_group) 
+FROM Ad_clicks;
 
-#This section is calculating the percent of people who clicked on ads from each utm source
-clicks_by_source = ad_clicks.groupby(['utm_source','is_click']).user_id.count().reset_index()
-#Pivoting
-clicks_pivot = ad_clicks.pivot(
-  columns = 'is_click',
-  index = 'user_id',
-  values = 'utm_source' 
-).reset_index()
+This returns the figure: 1654
 
-#Checks the percent of people who clicked the ad
-#clicks_pivot[True] is the number of people who clicked 
-#clicks_pivot[False] is the number of people who did not click
-# so it becomes people who clicked/total people (or views)
-clicks_pivot['percent_clicked'] = \
-   clicks_pivot[True] / \
-   (clicks_pivot[True] + 
-    clicks_pivot[False])
-
-#Were approximately the same number of people shown both ads?
-#We need to count the number of people group by experimental group
-
-ad_clicks\
-.groupby('experimental_group')\
-.user_id\
-.count()\
-.reset_index()
-
-#This step checks the percentage of people who clicked on ad A or B
-pivot_table = ad_clicks\
-.groupby(['experimental_group', 'is_click'])\
-.user_id\
-.count()\
-.reset_index()\
-.pivot(
-    index = 'experimental_group',
-    columns = 'is_click',
-    values = 'user_id'
-).reset_index
-print(pivot_table)
-
-#Splits results
-a_clicks = ad_clicks['experimental_group'] == 'A'
-b_clicks = ad_clicks['experimental_group'] == 'B'
-
-print(a_clicks)
-
-#Calculating % of users who clicks on ad A or B per day
-# A/(A+B) & B/(A+B)
-
-a_clicks_pivot = ad_clicks\
-.groupby(['is_click', 'day'])\
-.user_id.count()\
-.reset_index()\
-.pivot(
-  columns = 'is_click',
-  index = 'day',
-  values = 'user_id'
-).reset_index
-print(a_clicks_pivot)
-
-# We do the operation
-a_clicks_pivot['percent_clicked'] = \
-a_clicks_pivot[True] / \
-  (a_clicks_pivot[True] + 
-    a_clicks_pivot[False])
-
-#B clicks
-b_clicks_pivot = ad_clicks\
-.groupby(['is_click', 'day'])\
-.user_id.count()\
-.reset_index()\
-.pivot(
-  columns = 'is_click',
-  index = 'day',
-  values = 'user_id'
-).reset_index
-print(b_clicks_pivot)
-
-# We do the operation
-b_clicks_pivot['percent_clicked'] = \
-b_clicks_pivot[True] / \
-  (b_clicks_pivot[True] + 
-    b_clicks_pivot[False])
+# This query selects the columns 'experimental_group' and 'ad_click_timestamp' from the table 'Ad_clicks' only on the condition where the column 'ad_click_timestamp'
+ isn't null or contains an empty value in it's cell
  
+SELECT experimental_group, ad_click_timestamp 
+FROM Ad_clicks
+WHERE ad_click_timestamp IS NOT NULL;
+
+# This query selects the 'experimental_group' column from the table 'Ad_clicks' on 2 conditions: 
+1.) In the column 'experimental_group' the value MUST be 'A' and
+2.) In the 'ad_click_timestamp' column adjacent to the 'experimental_group' column it requires that there be a data value in that cell (not null) 
+
+SELECT COUNT(experimental_group) 
+FROM Ad_clicks
+WHERE experimental_group = 'A'
+AND ad_click_timestamp IS NOT NULL;
+
+This returns the figure: 310
+
+# This query selects the 'experimental_group' column from the table 'Ad_clicks' on 2 conditions: 
+1.) In the column 'experimental_group' the value MUST be 'B' and
+2.) In the 'ad_click_timestamp' column adjacent to the 'experimental_group' column it requires that there be a data value in that cell (not null) 
+
+SELECT COUNT(experimental_group) 
+FROM Ad_clicks
+WHERE experimental_group = 'B'
+AND ad_click_timestamp IS NOT NULL;
+
+This returns the figure: 255
+
+# This query returns to us the different platforms that the advertisements are being pushed through
+SELECT DISTINCT utm_source
+FROM Ad_clicks;
+
+This returns: email, facebook, google, twitter
+
+Population: 1654
+Experimental Group A: 310
+Experimental Group B: 255
+Sample: 565
+
+# AGGREGATES #
+
+# This query that returns experimental group A on google over total sample 
+
+SELECT COUNT(experimental_group)
+FROM Ad_clicks
+WHERE utm_source = 'google' AND experimental_group = 'A' AND ad_click_timestamp IS NOT NULL
+
+Returns: 137
+137/1654 (~9%)
+
+# This query that returns experimental group B on google over total sample 
+
+SELECT COUNT(experimental_group)
+FROM Ad_clicks
+WHERE utm_source = 'google' AND experimental_group = 'B' AND ad_click_timestamp IS NOT NULL
+
+Returns: 102
+102/1654 (~6%)
+
+# This query that returns experimental group A on email over total sample 
+
+SELECT COUNT(experimental_group)
+FROM Ad_clicks
+WHERE utm_source = 'email' AND experimental_group = 'A' AND ad_click_timestamp IS NOT NULL
+
+Returns: 41
+41/1654 (~2%)
+
+# This query that returns experimental group B on email over total sample 
+
+SELECT COUNT(experimental_group)
+FROM Ad_clicks
+WHERE utm_source = 'email' AND experimental_group = 'B' AND ad_click_timestamp IS NOT NULL
+
+Returns: 39
+39/1654 (~2%)
+
+# This query that returns experimental group A on facebook over total sample
+
+SELECT COUNT(experimental_group)
+FROM Ad_clicks
+WHERE utm_source = 'facebook' AND experimental_group = 'A' AND ad_click_timestamp IS NOT NULL
+
+Returns: 94
+94/1654 (~6%)
+
+# This query that returns experimental group B on facebook over total sample 
+
+SELECT COUNT(experimental_group)
+FROM Ad_clicks
+WHERE utm_source = 'facebook' AND experimental_group = 'B' AND ad_click_timestamp IS NOT NULL
+
+Returns: 86
+86/1654 (~5%)
+
+# This query that returns experimental group A on twitter over total sample 
+
+SELECT COUNT(experimental_group)
+FROM Ad_clicks
+WHERE utm_source = 'twitter' AND experimental_group = 'A' AND ad_click_timestamp IS NOT NULL
+
+Returns: 38
+38/1654 (~2%)
+
+# This query that returns experimental group B on twitter over total sample 
+
+SELECT COUNT(experimental_group)
+FROM Ad_clicks
+WHERE utm_source = 'twitter' AND experimental_group = 'B' AND ad_click_timestamp IS NOT NULL
+
+Returns: 28
+28/1654 (~1%)
+
+
+# ANALYTICS #
+
+Google: (137 + 102)/ 1654              ~15%
+Email: (41 + 39)/ 1654                 ~4%
+Facebook: (94 + 86) / 1654             ~11%
+Twitter: (38 + 28) / 1654              ~3% 
+
+Clicked v Not Clicked (in %)           ~33%
+
+# CONCLUSIONS #
+
+In the entire sample group of our traffic to shoefly.com, we found that:
+1.) Only 565/1654 participants (~34%) interacted with the different ads outputted
+2.) In observing our advertisement A we found that of the sample 310/565 (~55%) interacted/were exposed to this advertisement
+3.) In observing our advertisement B we found that of the sample 255/565 (~45%) interacted/were exposed to this advertisement
+4.) It can be observed that both advertisements, despite it's variations had very similar results for which of the sample clicked on the ad. On the platforms itself 
+the most interaction can be found here (greatest to least):
+   1.) Google
+   2.) Facebook
+   3.) Email
+   4.) Twitter
+
+In conclusion we should spend more resources in the programmatics team placing more emphasis on advertisement a, as well as focusing on googles platform.
+Additionally, we should focus on how to gain more interactions on the platforms that people are more likely to use. Prioritization should be placed on Twitter
+specifically because of the results. 
