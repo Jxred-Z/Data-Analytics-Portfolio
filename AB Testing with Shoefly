@@ -10,17 +10,16 @@ ad_clicks.groupby('utm_source')\
 .reset_index()
 
 #This section checks if someone clicked on an ad through a video
-is_click = ad_clicks['ad_click_timestamp'] = ~ad_clicks\
+ad_clicks['is_click'] = ad_clicks['ad_click_timestamp'] = ~ad_clicks\
    .ad_click_timestamp.isnull()
 
 #This section is calculating the percent of people who clicked on ads from each utm source
-clicks_by_source = ad_clicks.groupby(['utm_source', 'is_click']).user_id.count().reset_index()
-
+clicks_by_source = ad_clicks.groupby(['utm_source','is_click']).user_id.count().reset_index()
 #Pivoting
 clicks_pivot = ad_clicks.pivot(
   columns = 'is_click',
-  index = 'utm_source',
-  values = 'user_id'
+  index = 'user_id',
+  values = 'utm_source' 
 ).reset_index()
 
 #Checks the percent of people who clicked the ad
@@ -35,5 +34,66 @@ clicks_pivot['percent_clicked'] = \
 #Were approximately the same number of people shown both ads?
 #We need to count the number of people group by experimental group
 
-ad_clicks.groupby('user_id').experimental_group.count().reset_index()
-#You gotta find the problems at home where you can run Pandas locally
+ad_clicks\
+.groupby('experimental_group')\
+.user_id\
+.count()\
+.reset_index()
+
+#This step checks the percentage of people who clicked on ad A or B
+pivot_table = ad_clicks\
+.groupby(['experimental_group', 'is_click'])\
+.user_id\
+.count()\
+.reset_index()\
+.pivot(
+    index = 'experimental_group',
+    columns = 'is_click',
+    values = 'user_id'
+).reset_index
+print(pivot_table)
+
+#Splits results
+a_clicks = ad_clicks['experimental_group'] == 'A'
+b_clicks = ad_clicks['experimental_group'] == 'B'
+
+print(a_clicks)
+
+#Calculating % of users who clicks on ad A or B per day
+# A/(A+B) & B/(A+B)
+
+a_clicks_pivot = ad_clicks\
+.groupby(['is_click', 'day'])\
+.user_id.count()\
+.reset_index()\
+.pivot(
+  columns = 'is_click',
+  index = 'day',
+  values = 'user_id'
+).reset_index
+print(a_clicks_pivot)
+
+# We do the operation
+a_clicks_pivot['percent_clicked'] = \
+a_clicks_pivot[True] / \
+  (a_clicks_pivot[True] + 
+    a_clicks_pivot[False])
+
+#B clicks
+b_clicks_pivot = ad_clicks\
+.groupby(['is_click', 'day'])\
+.user_id.count()\
+.reset_index()\
+.pivot(
+  columns = 'is_click',
+  index = 'day',
+  values = 'user_id'
+).reset_index
+print(b_clicks_pivot)
+
+# We do the operation
+b_clicks_pivot['percent_clicked'] = \
+b_clicks_pivot[True] / \
+  (b_clicks_pivot[True] + 
+    b_clicks_pivot[False])
+ 
